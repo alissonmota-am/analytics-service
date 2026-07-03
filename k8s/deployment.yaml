@@ -27,15 +27,9 @@ spec:
             limits:
               cpu: 300m
               memory: 256Mi
-          env:
-            - name: PORT
-              value: "8005"
-            - name: AWS_REGION
-              value: "us-east-1"
-            - name: AWS_SQS_URL
-              value: "https://sqs.us-east-1.amazonaws.com/634115191566/toggle-master-queue"
-            - name: AWS_DYNAMODB_TABLE
-              value: "ToggleMasterAnalytics"
+          envFrom:
+            - configMapRef:
+                name: analytics-service-config
           livenessProbe:
             httpGet:
               path: /health
