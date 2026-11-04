@@ -10,6 +10,8 @@ from botocore.exceptions import NoCredentialsError, ClientError
 from flask import Flask, jsonify
 from dotenv import load_dotenv
 
+from telemetry import init_telemetry, get_tracer
+
 # Configura o logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 log = logging.getLogger(__name__)
@@ -45,12 +47,21 @@ except Exception as e:
 
 def process_message(message):
     """ Processa uma única mensagem SQS e a insere no DynamoDB """
-    try:
+    # Span manual para rastrear o processamento de cada evento no worker
+    tracer = get_tracer()
+    with tracer.start_as_current_span("process_sqs_message") as span:
+      try:
         log.info(f"Processando mensagem ID: {message['MessageId']}")
         body = json.loads(message['Body'])
         
         # Gera um ID único para o item no DynamoDB
         event_id = str(uuid.uuid4())
+
+        # Atributos de negocio no span para facilitar a analise no APM
+        span.set_attribute("messaging.message_id", message['MessageId'])
+        span.set_attribute("toggle_master.event_id", event_id)
+        span.set_attribute("toggle_master.flag_name", body.get('flag_name', ''))
+        span.set_attribute("toggle_master.user_id", body.get('user_id', ''))
         
         # Constrói o item no formato do DynamoDB
         item = {
@@ -75,13 +86,13 @@ def process_message(message):
             ReceiptHandle=message['ReceiptHandle']
         )
         
-    except json.JSONDecodeError:
+      except json.JSONDecodeError:
         log.error(f"Erro ao decodificar JSON da mensagem ID: {message['MessageId']}")
         # Não deleta a mensagem, pode ser uma "poison pill"
-    except ClientError as e:
+      except ClientError as e:
         log.error(f"Erro do Boto3 (DynamoDB ou SQS) ao processar {message['MessageId']}: {e}")
         # Não deleta a mensagem, tenta novamente
-    except Exception as e:
+      except Exception as e:
         log.error(f"Erro inesperado ao processar {message['MessageId']}: {e}")
         # Não deleta a mensagem, tenta novamente
 
@@ -117,6 +128,9 @@ def sqs_worker_loop():
 # --- Servidor Flask (Apenas para Health Check) ---
 
 app = Flask(__name__)
+
+# Inicializa o OpenTelemetry (instrumenta Flask e botocore SQS/DynamoDB)
+init_telemetry(app)
 
 @app.route('/health')
 def health():
