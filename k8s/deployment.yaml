@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: analytics-service
-          image: 344258592914.dkr.ecr.us-east-1.amazonaws.com/toggle-master-dev/analytics-service:0199863e1298a53f82acf7945e79eb34de025912
+          image: 344258592914.dkr.ecr.us-east-1.amazonaws.com/toggle-master-dev/analytics-service:e08ed0c69eba42a4ba287aee5e8fe854aa2284ef
           ports:
             - containerPort: 8005
           resources:
