@@ -6,7 +6,7 @@ metadata:
 data:
   PORT: "8005"
   AWS_REGION: "us-east-1"
-  AWS_SQS_URL: "https://sqs.us-east-1.amazonaws.com/533267294133/analytics-service-dev-queue"
+  AWS_SQS_URL: "https://sqs.us-east-1.amazonaws.com/344258592914/analytics-service-dev-queue"
   AWS_DYNAMODB_TABLE: "AnalyticsServiceEventsDev"
   # OpenTelemetry
   OTEL_SERVICE_NAME: "analytics-service"
